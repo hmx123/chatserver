@@ -1,0 +1,16 @@
+#心跳包模块
+MSG_UPTIME_ACCONT = 999
+
+#账号模块
+MSG_HEAD_ACCONT = 1000	#消息头
+MSG_ACTION_LOGIN = 1	#登陆
+MSG_ACTION_REGISTER = 2	#注册
+MSG_ACTION_RECONNECT = 3#重连
+
+#聊天室模块
+MSG_HEAD_ROOM = 1001		#消息头
+MSG_ACTION_CREATE = 1		#创建房间
+MSG_ACTION_ROOM_LIST = 2	#房间列表
+
+
+{'head':消息头,"action":子消息,'error':异常反馈,'data':{'acconst':数据}}
