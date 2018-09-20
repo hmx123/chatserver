@@ -62,26 +62,45 @@ def _db_login(attr,cursor):
 	acc = attr[2]
 	pwd = attr[3]
 	pwd = hashlib.sha1(pwd.encode("utf-8")).hexdigest()
-	sql = "select * from l_accont where account='%s' limit 1"
-	count=cursor.execute(sql % acc)
-	data=cursor.fetchone()
-	
-	token = None
-	curpsw = None
-	accont = None
-	power = 0
+	# 设置缓存，从缓存中查询
+	key = 'DataCache-%s-%s-%s' % (handle, acc, pwd)
+	data = REDIS.get(key)
+	print 'from redis %s' % data
 	if data:
-		#print data
+		# print data
+		data = eval(data)  # 将字符串字典转化为字典
 		accont = data['account']
 		curpsw = data['password']
 		token = data['token']
 		power = int(data['power'])
-	if curpsw == None:
-		return handle([1,token,power,accont])
-	elif curpsw == pwd:
-		return handle([0,token,power,accont])
-	else:
-		return handle([2,token,power,accont])
+		if curpsw == None:
+			handle([1, token, power, accont])
+		elif curpsw == pwd:
+			handle([0, token, power, accont])
+		else:
+			handle([2, token, power, accont])
+		print('get from cache: %s' % data)
+	if data is None:
+		sql = "select * from l_accont where account='%s' limit 1"
+		count=cursor.execute(sql % acc)
+		data=cursor.fetchone()
+		token = None
+		curpsw = None
+		accont = None
+		power = 0
+		if data:
+			#print data
+			REDIS.set(key, data, 5)  # 添加到缓存,设置过期时间
+			accont = data['account']
+			curpsw = data['password']
+			token = data['token']
+			power = int(data['power'])
+		if curpsw == None:
+			handle([1,token,power,accont])
+		elif curpsw == pwd:
+			handle([0,token,power,accont])
+		else:
+			handle([2,token,power,accont])
 
 # 创建聊天室
 def db_createRoom(handle,accid,name):
