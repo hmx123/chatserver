@@ -90,7 +90,7 @@ def _db_login(attr,cursor):
 		power = 0
 		if data:
 			#print data
-			REDIS.set(key, data, 5)  # 添加到缓存,设置过期时间
+			REDIS.set(key, data, 20)  # 添加到缓存,设置过期时间
 			accont = data['account']
 			curpsw = data['password']
 			token = data['token']
@@ -126,18 +126,17 @@ def _db_getRoomList(attr,cursor):
 	handle = attr[1]
 	sql = 'select * from l_room'
 	count=cursor.execute(sql)
-	#data=cursor.fetchone()
-	# 每次获取时会从上次游标的位置开始移动size个位置，返回size条数据
-	listdata = None
-	if count >0:
+	# 设置房间缓存
+	key = 'RoomCache-%s' % handle
+	data = REDIS.get(key)
+	if data:
+		data = eval(data)
+		print 'from roomdata is %s' % data
+		handle(data)
+	elif data is None:
 		data = cursor.fetchmany(count)
-		listdata = []
-		count = 0
-		for d in data:
-			count+=1
-			listdata.append({'roomid':d['roomid'],'name':d['name'],'index':count})
-	handle(listdata)
-	
+		REDIS.set(key, data, 20)
+		handle(data)
 	
 def AddCachingQueue(attr):
 	if not CachingQueue.empty():
