@@ -4,9 +4,10 @@ import struct,json,re,time, redis
 MSG_UPTIME_ACCONT = 999
 
 MSG_HEAD_ACCONT = 1000
-MSG_ACTION_LOGIN = 1	#登陆
-MSG_ACTION_REGISTER = 2	#注册
-MSG_ACTION_RECONNECT = 3#重连
+MSG_ACTION_LOGIN = 1	  #登陆
+MSG_ACTION_REGISTER = 2	  #注册
+MSG_ACTION_RECONNECT = 3  #重连
+MSG_ACTION_CODECHECK = 4  # 校验
 
 MSG_HEAD_ROOM = 1001
 MSG_ACTION_CREATE = 1		#创建房间
@@ -33,10 +34,12 @@ class Base():
 
 	# 发送消息
 	def send(self,head,action=1,data=None,error=''):
-		if data == None:data={}
+		if data == None:
+			data={}
 		data = {'head':head,"action":action,'error':error.decode('UTF-8'),'data':data}
 		data = json.dumps(data)
-		if head!= MSG_UPTIME_ACCONT:print 'return:%s'%data
+		if head!= MSG_UPTIME_ACCONT:
+			print 'return:%s'%data
 		try:
 			self.conn.sendto(data,self.addr)
 		except Exception as e:

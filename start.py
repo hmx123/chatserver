@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 import psutil
 import socket,os,gevent
-from user.user import *
+from user.user import User
 from gevent.queue import Queue
 from gevent import socket,monkey;monkey.patch_all()
 
@@ -16,7 +16,6 @@ BUFSIZE = 1024             #缓冲区大小1K
 recovery = Queue()
 clientNum = Queue()
 
-data, addr = 'test', 'test'
 
 class Server_UDP():
 	def __init__(self, host , port):
@@ -29,13 +28,13 @@ class Server_UDP():
 		clients = {}
 		while True:
 			try:
-				global data, addr
 				data,addr = udpSock.recvfrom(BUFSIZE)          #接受UDP
 				# 回收断线用户
 				while not recovery.empty():
 					key = recovery.get()
 					print 'recovery:',key
-					if key in clients.keys():del clients[key]
+					if key in clients.keys():
+						del clients[key]
 				# 处理消息
 				if len(data) > 0:
 					clienturl='%s:%s'%(addr[0],addr[1])

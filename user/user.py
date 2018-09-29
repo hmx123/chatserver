@@ -6,6 +6,7 @@
 import const
 from base import *
 from db.dbsql import *
+from db.wyyapi import sendcode
 
 class User(Base):
 	def __init__(self,_server,_conn,_addr):
@@ -16,13 +17,23 @@ class User(Base):
 
 	# 登陆消息回执
 	def call_login(self,calldata):
+		# handle([0, token, power, accont])
 		if calldata[0] == 0:
 			self.userid = calldata[3]
 			self.power = calldata[2]
 			self.send(MSG_HEAD_ACCONT,MSG_ACTION_LOGIN,{'accid':self.userid,'token':calldata[1],'power':self.power},['','没有该用户','密码错误'][calldata[0]])
+	# 发送验证码回执
+	def call_sendcode(self, calldata):
+		if len(calldata) > 1:
+			self.send(MSG_HEAD_ACCONT, MSG_ACTION_CODECHECK, {'account':calldata[1], 'code': 200}, '')
+		else:
+			self.send(MSG_HEAD_ACCONT, MSG_ACTION_CODECHECK, None, ['phone err', 'user already'][calldata[0]])
 	# 注册消息回执
 	def call_register(self,calldata):
-		self.send(MSG_HEAD_ACCONT,MSG_ACTION_REGISTER,None,['','没有该用户','密码错误'][calldata])
+		if len(calldata) > 1:
+			self.send(MSG_HEAD_ACCONT, MSG_ACTION_REGISTER, {'account':calldata[0], 'passward':calldata[1], 'token':calldata[2]}, '')  # acc, pwd, token
+		else:
+			self.send(MSG_HEAD_ACCONT,MSG_ACTION_REGISTER,None,['','没有该用户','密码错误'][calldata])
 
 	# 重连消息回执
 	def call_reconnect(self,calldata):
@@ -45,15 +56,26 @@ class User(Base):
 		else:
 			self.send(MSG_HEAD_ROOM,MSG_ACTION_ROOM_LIST,None,'No chat room available')
 
+	# 聊天室搜索回执
+	def call_searchRoom(self, listdata):
+		if listdata:
+			self.send()
+		else:
+			self.send()
+
 	def command_action(self,head,action,data):
 		# 账号模块
 		if head == MSG_HEAD_ACCONT:
 			# 登陆
 			if action == MSG_ACTION_LOGIN:
 				db_login(self.call_login,data['accont'],data['passward'])
+			# 发送验证码
+			elif action == MSG_ACTION_CODECHECK:
+				db_sendcode(self.call_sendcode, data['accont'])
 			# 注册
 			elif action == MSG_ACTION_REGISTER:
-				db_register(self.call_register,data['accont'],data['passward'])
+				# 增加注册信息 用户昵称，性别，生日 "nickname":"xxxx", "gender":"1","birthday":"xxxx"
+				db_register(self.call_register,data['accont'],data['passward'], data['nickname'], data['gender'], data['birthday'], data['code'])
 			# 重连
 			elif action == MSG_ACTION_RECONNECT:
 				db_login(self.call_reconnect,data['accont'],data['passward'])
@@ -76,3 +98,6 @@ class User(Base):
 					# 获取公用聊天室列表
 				elif action == MSG_ACTION_ROOM_LIST:
 					db_getRoomList(self.call_getRoomList)
+				# 聊天室搜索
+				elif action == 'search':
+					db_searchRoom(self.call_searchRoom)

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataSource name="uploaddev@localhost">
+  <database-model serializer="dbm" rdbms="MYSQL" format-version="4.4">
+    <root id="1"/>
+    <schema id="2" parent="1" name="uploaddev">
+      <Current>1</Current>
+      <Visible>1</Visible>
+    </schema>
+    <schema id="3" parent="1" name="accont"/>
+    <schema id="4" parent="1" name="chat_dev"/>
+    <schema id="5" parent="1" name="djangoblog"/>
+    <schema id="6" parent="1" name="ecomm"/>
+    <schema id="7" parent="1" name="information_schema"/>
+    <schema id="8" parent="1" name="movie"/>
+    <schema id="9" parent="1" name="mxshop"/>
+    <schema id="10" parent="1" name="myshop2"/>
+    <schema id="11" parent="1" name="mysql"/>
+    <schema id="12" parent="1" name="performance_schema"/>
+    <schema id="13" parent="1" name="python03"/>
+    <schema id="14" parent="1" name="song"/>
+    <schema id="15" parent="1" name="test"/>
+    <schema id="16" parent="1" name="testpy"/>
+    <schema id="17" parent="1" name="upload"/>
+    <schema id="18" parent="1" name="xshop"/>
+    <table id="19" parent="2" name="alembic_version"/>
+    <table id="20" parent="2" name="icon"/>
+    <column id="21" parent="19" name="version_num">
+      <Position>1</Position>
+      <DataType>varchar(32)|0</DataType>
+      <NotNull>1</NotNull>
+    </column>
+    <key id="22" parent="19" name="PRIMARY">
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>version_num</ColNames>
+      <Primary>1</Primary>
+    </key>
+    <column id="23" parent="20" name="id">
+      <Position>1</Position>
+      <DataType>int(11)|0</DataType>
+      <NotNull>1</NotNull>
+      <SequenceIdentity>1</SequenceIdentity>
+    </column>
+    <column id="24" parent="20" name="user_id">
+      <Position>2</Position>
+      <DataType>varchar(15)|0</DataType>
+    </column>
+    <column id="25" parent="20" name="icon">
+      <Position>3</Position>
+      <DataType>varchar(64)|0</DataType>
+    </column>
+    <column id="26" parent="20" name="icon_type">
+      <Position>4</Position>
+      <DataType>int(11)|0</DataType>
+    </column>
+    <column id="27" parent="20" name="confirmed">
+      <Position>5</Position>
+      <DataType>int(11)|0</DataType>
+    </column>
+    <key id="28" parent="20" name="PRIMARY">
+      <NameSurrogate>1</NameSurrogate>
+      <ColNames>id</ColNames>
+      <Primary>1</Primary>
+    </key>
+  </database-model>
+</dataSource>
