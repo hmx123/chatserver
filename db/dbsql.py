@@ -1,8 +1,9 @@
 #-*- coding:utf-8 –*-
+import hashlib
 from pymysqlpool import ConnectionPool
 import gevent
 from gevent.queue import Queue
-from wyyapi import *
+from wyyapi import wyy_create_user, wyy_create_room, checkcode
 from user.base import REDIS
 
 config = {
@@ -21,31 +22,36 @@ def connection_pool():
 	return pool
 	
 # 注册 0成功 1失败 2已存在账号 3数据库写入异常
-def db_register(handle,acc,pwd):
-	AddCachingQueue([_db_register,handle,acc,pwd]);
+def db_register(handle,acc,pwd, nickname, gender, birthday, code):
+	AddCachingQueue([_db_register,handle,acc, pwd, nickname, gender, birthday, code])
 def _db_register(attr,cursor):
 	handle = attr[1]
 	acc = attr[2]
 	pwd = attr[3]
-	pwd = hashlib.sha1(pwd.encode("utf-8")).hexdigest()
-	
+	newpwd = hashlib.sha1(pwd.encode("utf-8")).hexdigest()
+	nickname = attr[4]
+	gender = attr[5]
+	birthday = attr[6]
+	code = attr[7]
 	#检测是否存在
-	sql = "select password from l_accont where account='%s' limit 1"
+	sql = "select id from l_accont where account='%s' limit 1"
 	cursor.execute(sql % acc)
 	if cursor.fetchone():
-		handle(2)
+		handle([2])
 		return None
-		
+	# 验证码判断
+	if not checkcode(acc, code):
+		handle([3])
+		return None
 	#注册到网易云
-	token = wyy_create_user(acc)
+	token = wyy_create_user(acc, nickname, acc)
 	if token == None:
-		handle(1)
+		handle([1])
 		return None
-	
-	sql = "INSERT INTO l_accont (id, account, password,userid,token,phone,mail,weixin,qq,create_time,last_time,lkey,power) VALUES (%d,'%s','%s',%d,'%s','%s','%s','%s','%s',%d,%d,%d,%d)"
-	data = (0,acc,pwd,0,token,'','','','',0,0,0,0)
+	sql = "INSERT INTO l_accont (id, account, password,userid,token,phone,mail,weixin,qq,create_time,last_time,lkey,power,nickname,gender,birthday) VALUES (%d,'%s','%s',%d,'%s','%s','%s','%s','%s',%d,%d,%d,%d,'%s','%s','%s')"
+	data = (0,acc,newpwd,0,token,'','','','',0,0,0,0,nickname,gender,birthday)
 	if cursor.execute(sql % data) > 0:
-		handle(0)
+		handle([acc, pwd, token])
 		return True
 	else:
 		handle(1)
@@ -55,8 +61,6 @@ def _db_register(attr,cursor):
 
 def db_login(handle,acc,pwd):
 	AddCachingQueue([_db_login,handle,acc,pwd])
-
-
 def _db_login(attr,cursor):
 	handle = attr[1]
 	acc = attr[2]
@@ -101,6 +105,37 @@ def _db_login(attr,cursor):
 			handle([0,token,power,accont])
 		else:
 			handle([2,token,power,accont])
+
+# 用户密码修改
+def db_pwdalter(handle, acc, password, code):
+	AddCachingQueue([_db_pwdalter, handle, acc, password, code])
+def _db_pwdalter(attr, cursor):
+	handle = attr[1]
+	acc = attr[2]
+	pwd = attr[3]
+	newpwd = hashlib.sha1(pwd.encode("utf-8")).hexdigest()
+	code = attr[4]
+	# 验证码校验
+	# if not checkcode(acc, code):
+	# 	handle([1, acc])  # 验证码错误
+	# 	return None
+	# 检测是否存在
+	sql = "select password from l_accont where account='%s' limit 1"
+	cursor.execute(sql % acc)
+	findp = cursor.fetchone()
+	if not findp:
+		handle([2, acc])  # 用户不存在
+		return None
+	elif findp['password'] == newpwd:
+		handle([0, acc])  # 密码修改成功，请返回登录
+		return True
+	sqlu = "update l_accont set password='%s' where account='%s'"
+	if cursor.execute(sqlu % (newpwd, acc)) > 0:
+		handle([0, acc])  # 密码修改成功，请返回登录
+		return True
+	else:
+		handle([3, acc])  # 密码修改失败
+	return None
 
 # 创建聊天室
 def db_createRoom(handle,accid,name):
