@@ -1,8 +1,8 @@
 #-*- coding:utf-8 –*-
 import hashlib,requests,json,time, random
 
-AppKey = '0151eb211fb26ebf020684cfd8125624'
-AppSecret = '269163c64b9e'
+AppKey = '0151eb211fb26ebf020684cfdXXXXXXX'
+AppSecret = '269163cXXXXXXX'
 
 apiurl = {
 	'create_user':'https://api.netease.im/nimserver/user/create.action',
