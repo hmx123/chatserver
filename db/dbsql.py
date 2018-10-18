@@ -1,5 +1,7 @@
 #-*- coding:utf-8 –*-
 import hashlib
+import json
+
 from pymysqlpool import ConnectionPool
 import gevent
 from gevent.queue import Queue
@@ -54,7 +56,7 @@ def _db_register(attr,cursor):
 		handle([acc, pwd, token])
 		return True
 	else:
-		handle(1)
+		handle([1])
 	return None
 	
 #登陆 0成功 1没有该用户 2密码错误
@@ -66,10 +68,11 @@ def _db_login(attr,cursor):
 	acc = attr[2]
 	pwd = attr[3]
 	pwd = hashlib.sha1(pwd.encode("utf-8")).hexdigest()
-	# 设置缓存，从缓存中查询
+	'''
+	# 设置缓key
 	key = 'DataCache-%s-%s-%s' % (handle, acc, pwd)
 	data = REDIS.get(key)
-	print 'from redis %s' % data
+	#print 'from redis %s' % data
 	if data:
 		# print data
 		data = eval(data)  # 将字符串字典转化为字典
@@ -77,34 +80,26 @@ def _db_login(attr,cursor):
 		curpsw = data['password']
 		token = data['token']
 		power = int(data['power'])
-		if curpsw == None:
-			handle([1, token, power, accont])
-		elif curpsw == pwd:
+		if curpsw == pwd:
 			handle([0, token, power, accont])
 		else:
-			handle([2, token, power, accont])
-		print('get from cache: %s' % data)
-	if data is None:
-		sql = "select * from l_accont where account='%s' limit 1"
-		count=cursor.execute(sql % acc)
-		data=cursor.fetchone()
-		token = None
-		curpsw = None
-		accont = None
-		power = 0
-		if data:
-			#print data
-			REDIS.set(key, data, 20)  # 添加到缓存,设置过期时间
-			accont = data['account']
-			curpsw = data['password']
-			token = data['token']
-			power = int(data['power'])
-		if curpsw == None:
-			handle([1,token,power,accont])
-		elif curpsw == pwd:
-			handle([0,token,power,accont])
+			handle([2, acc])
+	'''
+	sql = "select password,token,power from l_accont where account='%s' limit 1"
+	count=cursor.execute(sql % acc)
+	data=cursor.fetchone()
+	if data:
+		#print data
+		# REDIS.set(key, data, 20)  # 添加到缓存,设置过期时间
+		curpsw = data['password']
+		token = data['token']
+		power = int(data['power'])
+		if curpsw == pwd:
+			handle([0, token, power, acc])
 		else:
-			handle([2,token,power,accont])
+			handle([2, acc])
+	else:
+		handle([1, acc])
 
 # 用户密码修改
 def db_pwdalter(handle, acc, password, code):
@@ -116,9 +111,9 @@ def _db_pwdalter(attr, cursor):
 	newpwd = hashlib.sha1(pwd.encode("utf-8")).hexdigest()
 	code = attr[4]
 	# 验证码校验
-	# if not checkcode(acc, code):
-	# 	handle([1, acc])  # 验证码错误
-	# 	return None
+	if not checkcode(acc, code):
+	 	handle([1, acc])  # 验证码错误
+	 	return None
 	# 检测是否存在
 	sql = "select password from l_accont where account='%s' limit 1"
 	cursor.execute(sql % acc)
@@ -139,7 +134,7 @@ def _db_pwdalter(attr, cursor):
 
 # 创建聊天室
 def db_createRoom(handle,accid,name):
-	AddCachingQueue([_db_createRoom,handle,accid,name]);
+	AddCachingQueue([_db_createRoom,handle,accid,name])
 def _db_createRoom(attr,cursor):
 	handle = attr[1]
 	accid = attr[2]
@@ -156,7 +151,7 @@ def _db_createRoom(attr,cursor):
 	
 # 获取公用聊天室列表
 def db_getRoomList(handle):
-	AddCachingQueue([_db_getRoomList,handle]);
+	AddCachingQueue([_db_getRoomList,handle])
 def _db_getRoomList(attr,cursor):
 	handle = attr[1]
 	sql = 'select * from l_room'
@@ -166,18 +161,37 @@ def _db_getRoomList(attr,cursor):
 	data = REDIS.get(key)
 	if data:
 		data = eval(data)
-		print 'from roomdata is %s' % data
+		#print 'from roomdata is %s' % data
 		handle(data)
 	elif data is None:
 		data = cursor.fetchmany(count)
 		REDIS.set(key, data, 20)
 		handle(data)
-	
+
+# 推送历史
+def db_jgpush(handle):
+	AddCachingQueue([_db_getjgpush, handle])
+def _db_getjgpush(attr, cursor):
+	handle = attr[1]
+	sql = 'select title,message,datatime from jgpush'
+	count = cursor.execute(sql)
+	# 设置房间缓存
+	key = 'jgpushCache-%s' % handle
+	data = REDIS.get(key)
+	if data:
+		data = eval(data)
+		# print 'from roomdata is %s' % data
+		handle(data)
+	elif data is None:
+		data = cursor.fetchmany(count)
+		REDIS.set(key, data, 20)
+		handle(data)
+
 def AddCachingQueue(attr):
 	if not CachingQueue.empty():
-		CachingQueue.put(attr);
+		CachingQueue.put(attr)
 	else:
-		CachingQueue.put(attr);
+		CachingQueue.put(attr)
 		gevent.spawn(updataCachingQueue)
 		
 def updataCachingQueue():

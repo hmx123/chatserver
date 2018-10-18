@@ -30,7 +30,7 @@ def wyy_create_user(accont, nickname, acc):
 			if jsonData['code'] == 200:
 				return jsonData['info']['token']
 		except ValueError:
-			jsonData = None;
+			jsonData = None
 	return None
 	
 #创建房间
@@ -60,7 +60,7 @@ def wyy_create_room(accid,name):
 
 # 验证码发送
 def sendcode(mobile):
-	TEMPLATEID = "9384147"
+	TEMPLATEID = "9374242"
 	CODELEN = "6"
 	body = ('templateid=%s&mobile=%s&codeLen=%s' % (TEMPLATEID, mobile, CODELEN)).encode("utf-8")
 	nonce = '575728120'  # 随机数（最大长度128个字符）
@@ -104,3 +104,16 @@ def checkcode(mobile, code):
 		except ValueError:
 			jsonData = None
 	return None
+
+# 用户token更新
+def updatatoken(acc):
+	url = 'https://api.netease.im/nimserver/user/refreshToken.action'
+	body = ('accid=%s' % (acc)).encode("utf-8")
+	nonce = '575728120'  # 随机数（最大长度128个字符）
+	curTime = str(int(time.time()))
+	checkSum = AppSecret + nonce + curTime
+	checkSum = hashlib.sha1(checkSum.encode("utf-8")).hexdigest()
+	headers = {'content-type': 'application/x-www-form-urlencoded;charset=utf-8', 'AppKey': AppKey, 'Nonce': nonce,
+			   'CurTime': curTime, 'CheckSum': checkSum}
+	response = requests.post(url=url, data=body, headers=headers)
+	print response.text

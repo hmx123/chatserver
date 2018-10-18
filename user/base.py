@@ -1,5 +1,8 @@
 #-*- coding:utf-8 –*-
 import struct,json,re,time, redis
+import logging
+
+base_logging = logging.getLogger("base")
 
 MSG_UPTIME_ACCONT = 999
 
@@ -38,11 +41,12 @@ class Base():
 		if data == None:data={}
 		data = {'head':head,"action":action,'error':error.decode('UTF-8'),'data':data}
 		data = json.dumps(data)
-		if head!= MSG_UPTIME_ACCONT:print 'return:%s'%data
+		if head!= MSG_UPTIME_ACCONT:
+			base_logging.info(('return:%s'%data))
 		try:
 			self.conn.sendto(data,self.addr)
 		except Exception as e:
-			print("client is colse:%s"%e)
+			base_logging.info(("client is colse:%s"%e))
 
 	# 数据监听
 	def request(self,data):
@@ -56,18 +60,19 @@ class Base():
 				self.uptime = int(time.time())
 				if jsonData['head'] == MSG_UPTIME_ACCONT:
 					self.send(jsonData['head'],jsonData['action'])
+					base_logging.info(('receive:%s' % data))
 					return 0,0,0
 					#return jsonData['head'],jsonData['action'],jsonData['data']
 				else:
-					print 'receive:%s'%data
+					base_logging.info('receive:%s'%data)
 					return jsonData['head'],jsonData['action'],jsonData['data']
 		# 心跳超时
 		if int(time.time()) - self.uptime > 180:
-			print 'client close : overtime ',self.addr
+			base_logging.info (('client close : overtime ',self.addr))
 			return -1,-1,-1
 		# 正常循环
 		if data == None:
 			return 0,0,0
 		# 异常断开
-		print 'client close : dataerr',self.addr
+		base_logging.info(('client close : dataerr',self.addr))
 		return -1,0,0

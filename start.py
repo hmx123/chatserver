@@ -1,5 +1,6 @@
 #-*- coding:utf-8 -*-
 import psutil
+import logging
 import socket,os,gevent
 from user.user import *
 from gevent.queue import Queue
@@ -9,6 +10,9 @@ host = '0.0.0.0'
 port = 8080
 BUFSIZE = 1024             #缓冲区大小1K
 
+logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 #from multiprocessing import Manager #数据共享
 #mapclient = Manager().dict()
 #l = Manager().list(range(5))  # 同样声明一个列表
@@ -16,7 +20,6 @@ BUFSIZE = 1024             #缓冲区大小1K
 recovery = Queue()
 clientNum = Queue()
 
-data, addr = 'test', 'test'
 
 class Server_UDP():
 	def __init__(self, host , port):
@@ -25,16 +28,15 @@ class Server_UDP():
 	def start_server(self,host, port):
 		udpSock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 		udpSock.bind((host,port))
-		print 'Server started successfully'
+		logger.info(('Server started successfully'))
 		clients = {}
 		while True:
 			try:
-				global data, addr
 				data,addr = udpSock.recvfrom(BUFSIZE)          #接受UDP
 				# 回收断线用户
 				while not recovery.empty():
 					key = recovery.get()
-					print 'recovery:',key
+					logger.info(('recovery:',key))
 					if key in clients.keys():del clients[key]
 				# 处理消息
 				if len(data) > 0:
@@ -47,7 +49,7 @@ class Server_UDP():
 						gevent.spawn(self.handle_request,udpSock,addr,clients[clienturl])
 					#gevent.sleep(0.001)
 			except Exception as e:
-				print("Server is colse:%s"%e)
+				logger.info(("Server is colse:%s"%e))
 		udpSock.close()
 
 	def handle_request(self,sock,addr,dataList):
